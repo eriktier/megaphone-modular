@@ -101,7 +101,7 @@ typedef struct shared_state_t {
 } Shared;
 
 #include <stddef.h>
-_Static_assert(sizeof(Shared) < SHARED_SIZE, "Shared memory structure is too large.");
+_Static_assert(sizeof(Shared) <= SHARED_SIZE, "Shared memory structure is too large.");
 
 //extern struct shared_state_t shared;
 

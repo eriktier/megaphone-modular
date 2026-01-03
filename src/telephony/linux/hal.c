@@ -346,3 +346,16 @@ void mega65_uart_printhex16(uint16_t v)
 {
   (void)v;
 }
+
+// UI/status helpers are no-ops in Linux tooling builds.
+void statusbar_draw_netname(void)
+{
+}
+
+void statusbar_draw_signal(void)
+{
+}
+
+void statusbar_draw_volte(void)
+{
+}

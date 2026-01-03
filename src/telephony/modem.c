@@ -15,13 +15,7 @@
 #include "format.h"
 #include "status.h"
 
-#include <string.h>
-
 sms_decoded_t sms;
-
-//char qltone_string_calling[]="AT+QLTONE=1,400,500,800,30000\r\n";      
-char qltone_string_calling[]="AT+QTTS=2,\"ring ring\"\r\n";      
-char qltone_string_off[]="AT+QLTONE=0\r\n";      
 
 #ifdef MEGA65
 // TODO: Replace with real UART I/O for the modem on MEGA65 hardware.
@@ -989,16 +983,6 @@ void modem_query_network(void)
 {
   modem_getready_to_issue_command();
   modem_uart_write((unsigned char *)"at+qspn\r\n",9);
-}
-
-void modem_getready_to_issue_command(void)
-{
-  while (shared.modem_response_pending) {
-    usleep(1000);
-    shared.modem_response_pending--;
-    modem_poll();
-  }
-  shared.modem_response_pending=1000;
 }
 
 #ifdef STANDALONE
