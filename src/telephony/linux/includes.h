@@ -30,6 +30,8 @@ char mega65_chdir(char *dir);
 
 unsigned long mega65_bcddate(void);
 unsigned long mega65_bcdtime(void);
+uint16_t to_bcd(unsigned int in);
+unsigned char de_bcd(unsigned char in);
 
 #define WITH_SECTOR_MARKERS 1
 #define NO_SECTOR_MARKERS 0
@@ -61,4 +63,3 @@ struct shared_resource {
 #define FRAMES_PER_SECOND 50
 
 #endif
-

@@ -106,7 +106,7 @@ int main(int argc,char **argv)
 	mega65_chdir("PHONE");
 	mount_d81("CONTACT0.D81",0);
 	read_sector(0,1,0);
-	unsigned int record_number = record_allocate_next( (unsigned char *)SECTOR_BUFFER_ADDRESS );
+	unsigned int record_number = record_allocate_next((unsigned long)SECTOR_BUFFER_ADDRESS);
 	if (!record_number) {
 	  fprintf(stderr,"ERROR: Failed to allocate contact record for: %s\n",line);
 	} else {

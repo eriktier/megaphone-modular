@@ -18,7 +18,7 @@ uint16_t contact_create_new(void)
   // A bit of a kludge to zero the new contact record without needing
   // a lock or another buffer.
   lfill(0x0400,0x00,512);
-  uint16_t bytes_used = 0;
+  unsigned int bytes_used = 0;
   build_contact((unsigned char*)0x400, &bytes_used,
 		(unsigned char *)"",
 		(unsigned char *)"",
@@ -83,5 +83,4 @@ char mount_contact_qso(unsigned int contact)
 
   return 0;
 }
-
 

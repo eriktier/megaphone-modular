@@ -2,6 +2,7 @@
 
 void loader_exec(char *progname)
 {
+#ifdef MEGA65
   // Disable memory write protection
   lpoke(0xFFD5000L,0x00); 
 
@@ -20,4 +21,8 @@ void loader_exec(char *progname)
   while(1) {
     POKE(0xD020,PEEK(0xD020)+1);
   }
+#else
+  // No-op on Linux tooling builds.
+  (void)progname;
+#endif
 }

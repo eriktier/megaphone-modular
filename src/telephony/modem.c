@@ -1,5 +1,8 @@
 #include "includes.h"
 
+#include <ctype.h>
+#include <string.h>
+
 #include "shstate.h"
 #include "dialer.h"
 #include "screen.h"
@@ -21,28 +24,42 @@ char qltone_string_calling[]="AT+QTTS=2,\"ring ring\"\r\n";
 char qltone_string_off[]="AT+QLTONE=0\r\n";      
 
 #ifdef MEGA65
+// TODO: Replace with real UART I/O for the modem on MEGA65 hardware.
+int modem_uart_write(uint8_t *buffer, uint16_t size)
+{
+  (void)buffer;
+  return size;
+}
+
+uint16_t modem_uart_read(uint8_t *buffer, uint16_t size)
+{
+  (void)buffer;
+  (void)size;
+  return 0;
+}
 #else
 
+#ifdef __linux__
 #define _GNU_SOURCE
+#endif
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <time.h>
-#include <strings.h>
-#include <string.h>
-#include <ctype.h>
-#include <sys/time.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <inttypes.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
+#include <termios.h>
+#include <time.h>
+#include <unistd.h>
+
+#ifdef __linux__
 #include <linux/serial.h>
 #include <linux/tty_flags.h>
-#include <termios.h>
-#include <unistd.h>
+#endif
 
 int fd=-1;
 
@@ -69,10 +86,47 @@ void log_error(char *m)
   fprintf(stderr,"ERROR: %s\n",m);
 }
 
+static speed_t baud_to_speed(int serial_speed)
+{
+  switch (serial_speed) {
+  case 115200: return B115200;
+  case 230400: return B230400;
+#ifdef B460800
+  case 460800: return B460800;
+#endif
+#ifdef B500000
+  case 500000: return B500000;
+#endif
+#ifdef B576000
+  case 576000: return B576000;
+#endif
+#ifdef B921600
+  case 921600: return B921600;
+#endif
+#ifdef B1000000
+  case 1000000: return B1000000;
+#endif
+#ifdef B1500000
+  case 1500000: return B1500000;
+#endif
+#ifdef B2000000
+  case 2000000: return B2000000;
+#endif
+#ifdef B4000000
+  case 4000000: return B4000000;
+#endif
+  default:
+    break;
+  }
+
+  return B115200;
+}
+
 void set_serial_speed(int fd, int serial_speed)
 {
   fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, NULL) | O_NONBLOCK);
   struct termios t;
+  speed_t speed;
 
   if (fd < 0) {
     log_error("set_serial_speed: invalid fd");
@@ -81,42 +135,11 @@ void set_serial_speed(int fd, int serial_speed)
 
   if (tcgetattr(fd, &t) != 0) { log_error("tcgetattr failed"); return; }  
 
-  if (serial_speed == 115200) {
-    if (cfsetospeed(&t, B115200))
-      log_error("failed to set output baud rate");
-    if (cfsetispeed(&t, B115200))
-      log_error("failed to set input baud rate");
-  }
-  else if (serial_speed == 230400) {
-    if (cfsetospeed(&t, B230400))
-      log_error("failed to set output baud rate");
-    if (cfsetispeed(&t, B230400))
-      log_error("failed to set input baud rate");
-  }
-  else if (serial_speed == 2000000) {
-    if (cfsetospeed(&t, B2000000))
-      log_error("failed to set output baud rate");
-    if (cfsetispeed(&t, B2000000))
-      log_error("failed to set input baud rate");
-  }
-  else if (serial_speed == 1000000) {
-    if (cfsetospeed(&t, B1000000))
-      log_error("failed to set output baud rate");
-    if (cfsetispeed(&t, B1000000))
-      log_error("failed to set input baud rate");
-  }
-  else if (serial_speed == 1500000) {
-    if (cfsetospeed(&t, B1500000))
-      log_error("failed to set output baud rate");
-    if (cfsetispeed(&t, B1500000))
-      log_error("failed to set input baud rate");
-  }
-  else {
-    if (cfsetospeed(&t, B4000000))
-      log_error("failed to set output baud rate");
-    if (cfsetispeed(&t, B4000000))
-      log_error("failed to set input baud rate");
-  }
+  speed = baud_to_speed(serial_speed);
+  if (cfsetospeed(&t, speed))
+    log_error("failed to set output baud rate");
+  if (cfsetispeed(&t, speed))
+    log_error("failed to set input baud rate");
 
   t.c_cflag &= ~PARENB;
   t.c_cflag &= ~CSTOPB;
@@ -129,11 +152,13 @@ void set_serial_speed(int fd, int serial_speed)
   if (tcsetattr(fd, TCSANOW, &t))
     log_error("failed to set terminal parameters");
 
+#ifdef __linux__
   // Also set USB serial port to low latency
   struct serial_struct serial;
   ioctl(fd, TIOCGSERIAL, &serial);
   serial.flags |= ASYNC_LOW_LATENCY;
   ioctl(fd, TIOCSSERIAL, &serial);
+#endif
   
 #ifdef DEBUG
   fprintf(stderr,"DEBUG: Set serial speed and parameters\n");
@@ -195,6 +220,20 @@ uint16_t modem_uart_read(uint8_t *buffer, uint16_t size)
 }
 
 #endif
+
+//char qltone_string_calling[]="AT+QLTONE=1,400,500,800,30000\r\n";
+char qltone_string_calling[]="AT+QTTS=2,\"ring ring\"\r\n";
+char qltone_string_off[]="AT+QLTONE=0\r\n";
+
+void modem_getready_to_issue_command(void)
+{
+  while (shared.modem_response_pending) {
+    usleep(1000);
+    shared.modem_response_pending--;
+    modem_poll();
+  }
+  shared.modem_response_pending=1000;
+}
 
 char *modem_init_strings[]={
   "ATI", // Make sure modem is alive

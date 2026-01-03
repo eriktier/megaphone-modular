@@ -1,4 +1,4 @@
-PROGRAMS := foneinit fonemain
+PROGRAMS := foneinit foneclst fonesms
 
 all:	tools/bomtool $(PROGRAMS:%=bin65/%.llvm.prg) $(FONTS)
 
@@ -11,14 +11,15 @@ LINUX_BINARIES=	src/telephony/linux/provision \
 COPT_M65=	-Iinclude	-Isrc/telephony/mega65 -Isrc/mega65-libc/include
 
 COMPILER=llvm
-COMPILER_PATH=/usr/local/bin
-CC=   $(COMPILER_PATH)/mos-c64-clang -mcpu=mos45gs02 -Iinclude -Isrc/telephony/mega65 -Isrc/mega65-libc/include -DLLVM -fno-unroll-loops -ffunction-sections -fdata-sections -mllvm -inline-threshold=0 -fvisibility=hidden -Oz -Wall -Wextra -Wtype-limits
+LLVM_MOS_PATH ?= /Users/erik/llvm-mos
+COMPILER_PATH ?= $(LLVM_MOS_PATH)/bin
+CC=   $(COMPILER_PATH)/mos-c64-clang -mcpu=mos45gs02 -Iinclude -Isrc/telephony/mega65 -Isrc/mega65-libc/include -DMEGA65 -DLLVM -fno-unroll-loops -ffunction-sections -fdata-sections -mllvm -inline-threshold=0 -fvisibility=hidden -Oz -Wall -Wextra -Wtype-limits
 
 # Uncomment to include stacktraces on calls to fail()
 CC+=	-g -finstrument-functions -DWITH_BACKTRACE
 
 LD=   $(COMPILER_PATH)/ld.lld
-CL=   $(COMPILER_PATH)/mos-c64-clang -DLLVM -mcpu=mos45gs02
+CL=   $(COMPILER_PATH)/mos-c64-clang -DMEGA65 -DLLVM -mcpu=mos45gs02
 HELPERS=        src/helper-llvm.c
 
 LDFLAGS += -Wl,-T,src/telephony/asserts.ld
@@ -78,6 +79,8 @@ SRC_TELEPHONY_COMMON=	src/telephony/d81.c \
 			src/telephony/index.c \
 			src/telephony/buffers.c \
 			src/telephony/search.c \
+			src/telephony/modem.c \
+			src/telephony/format.c \
 			src/telephony/sms.c \
 			src/telephony/smsdecode.c \
 			src/telephony/smsencode.c \
@@ -149,7 +152,7 @@ src/telephony/linux/sortd81:	src/telephony/sortd81.c $(SRC_TELEPHONY_COMMON) $(H
 # can generate the function list, and then a second time, where we link that in.
 HELPER_SRCS=	 src/telephony/attr_tables.c src/telephony/helper-llvm.s \
 		 src/telephony/mega65/hal.c src/telephony/mega65/hal_asm_llvm.s
-bin65/%.llvm.prg:	src/telephony/%.c $(NATIVE_TELEPHONY_COMMON)
+bin65/%.llvm.prg:	src/telephony/%.c $(NATIVE_TELEPHONY_COMMON) $(HELPER_SRCS)
 	mkdir -p bin65
 	rm -f src/telephony/mega65/function_table.c
 	echo "struct function_table function_table[]={}; const unsigned int function_table_count=0; const unsigned char __wp_regs[9];" > src/telephony/mega65/function_table.c

@@ -332,14 +332,17 @@ char log_error_(const char *file,const char *func,const unsigned int line,const 
   return error_code;
 }
 
-void mega65_uart_print(char *)
+void mega65_uart_print(char *s)
 {
+  (void)s;
 }
 
 void mega65_uart_printhex(uint8_t v)
 {
+  (void)v;
 }
 
 void mega65_uart_printhex16(uint16_t v)
 {
+  (void)v;
 }

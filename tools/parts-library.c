@@ -6,15 +6,6 @@
 
 #define INITIAL_PARTS_CAPACITY 50
 
-typedef struct {
-    char part_number[MAX_PROPERTY_LENGTH];
-    char description[MAX_PROPERTY_LENGTH];
-    char manufacturer[MAX_PROPERTY_LENGTH];
-    char unit_price[MAX_PROPERTY_LENGTH];
-    char stock[MAX_PROPERTY_LENGTH];
-    char product_url[MAX_PROPERTY_LENGTH];
-} PartInfo;
-
 // Function to initialize the parts library
 void init_parts_library(PartsLibrary *lib) {
     lib->size = 0;

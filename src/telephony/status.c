@@ -1,5 +1,6 @@
 #include "includes.h"
 
+#include "shstate.h"
 #include "screen.h"
 #include "status.h"
 #include "shstate.h"
